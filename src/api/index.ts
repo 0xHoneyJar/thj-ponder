@@ -3,7 +3,8 @@ import { ponder } from "@/generated";
 ponder.get("/", async (c) => {
   return c.json({ 
     service: "THJ Ponder",
-    status: "running"
+    status: "running",
+    port: process.env.PORT || "42069"
   });
 });
 

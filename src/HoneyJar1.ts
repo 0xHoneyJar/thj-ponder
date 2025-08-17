@@ -21,8 +21,12 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
   // Determine if this is a mint or transfer
   const isMint = from === ZERO_ADDRESS;
   
-  // Create transfer event record
-  const transferId = `${event.transaction.hash}-${event.log.logIndex}`;
+  // Create transfer event record with proper null handling
+  // Use fallback values if transaction details are null
+  const txHash = event.transaction?.hash || `0x${blockNumber.toString(16).padStart(64, '0')}`;
+  const logIndex = event.log?.logIndex ?? 0;
+  const transferId = `${txHash}-${logIndex}`;
+  
   await TransferEvent.create({
     id: transferId,
     tokenId: tokenId,
@@ -31,8 +35,8 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
     isMint: isMint,
     timestamp: timestamp,
     blockNumber: blockNumber,
-    transactionHash: event.transaction.hash,
-    logIndex: event.log.logIndex,
+    transactionHash: txHash,
+    logIndex: logIndex,
   });
 
   // Update or create token record

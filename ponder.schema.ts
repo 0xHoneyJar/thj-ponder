@@ -9,14 +9,18 @@ export default createSchema((p) => ({
     timestamp: p.bigint(),
     blockNumber: p.bigint(),
     transactionHash: p.string(),
+    collection: p.string(), // HoneyJar1, HoneyJar2, etc.
+    chainId: p.int(), // Chain ID for the transfer
   }),
   
   Holder: p.createTable({
-    id: p.string(), // wallet address
+    id: p.string(), // wallet address + collection
     address: p.string(),
     balance: p.int(),
     totalMinted: p.int(), // how many they minted (from 0x0)
     lastActivityTime: p.bigint(),
     firstMintTime: p.bigint().optional(),
+    collection: p.string(), // HoneyJar1, HoneyJar2, etc.
+    chainId: p.int(), // Chain ID for the holder
   }),
 }))

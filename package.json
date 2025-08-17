@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "ponder start",
+    "start": "PORT=${PORT:-42069} ponder start",
     "codegen": "ponder codegen",
     "serve": "ponder serve",
     "build": "ponder codegen"

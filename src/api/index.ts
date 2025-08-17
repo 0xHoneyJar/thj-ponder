@@ -1,6 +1,22 @@
 import { ponder } from "@/generated";
 import { graphql } from "@ponder/core";
 
+// ============= CORS MIDDLEWARE =============
+// Add CORS headers to all API responses
+ponder.use("*", async (c, next) => {
+  // Set CORS headers
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type");
+  
+  // Handle preflight requests
+  if (c.req.method === "OPTIONS") {
+    return c.text("", 204);
+  }
+  
+  await next();
+});
+
 // ============= REST API ENDPOINTS =============
 
 // GET /api/health - Health check endpoint for Railway

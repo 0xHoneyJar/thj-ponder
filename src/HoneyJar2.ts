@@ -73,7 +73,6 @@ ponder.on("HoneyJar2:Transfer", async ({ event, context }) => {
       }
     });
   }
-});  
   // Update collection stats
   const statsId = "HoneyJar2";
   const existingStats = await CollectionStats.findUnique({ id: statsId });

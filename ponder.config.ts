@@ -5,11 +5,10 @@ import { ERC721ABI } from "./abis/ERC721";
 export default createConfig({
   networks: {
     mainnet: {
-      chainId: 1, // Ethereum mainnet
+      chainId: 1,
       transport: http(
         process.env.PONDER_RPC_URL_1 || "https://1.rpc.hypersync.xyz"
       ),
-      maxRequestsPerSecond: 150, // HyperSync can handle high throughput
     },
     arbitrum: {
       chainId: 42161,

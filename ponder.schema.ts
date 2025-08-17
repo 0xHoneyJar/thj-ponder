@@ -23,4 +23,13 @@ export default createSchema((p) => ({
     collection: p.string(), // HoneyJar1, HoneyJar2, etc.
     chainId: p.int(), // Chain ID for the holder
   }),
+  
+  CollectionStats: p.createTable({
+    id: p.string(), // collection name (e.g., "HoneyJar1")
+    collection: p.string(),
+    totalSupply: p.int(), // Total number of NFTs minted
+    uniqueHolders: p.int(), // Number of unique holders
+    lastMintTime: p.bigint().optional(),
+    chainId: p.int(),
+  }),
 }))

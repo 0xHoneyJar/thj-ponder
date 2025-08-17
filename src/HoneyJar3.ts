@@ -3,7 +3,7 @@ import { ponder } from "@/generated";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 ponder.on("HoneyJar3:Transfer", async ({ event, context }) => {
-  const { Transfer, Holder } = context.db;
+  const { Transfer, Holder, CollectionStats } = context.db;
   
   const from = event.args.from.toLowerCase();
   const to = event.args.to.toLowerCase();
@@ -72,5 +72,36 @@ ponder.on("HoneyJar3:Transfer", async ({ event, context }) => {
         chainId: chainId,
       }
     });
+  }
+});  
+  // Update collection stats
+  const statsId = "HoneyJar3";
+  const existingStats = await CollectionStats.findUnique({ id: statsId });
+  
+  if (isMint) {
+    // If it's a mint, increment total supply
+    if (existingStats) {
+      await CollectionStats.update({
+        id: statsId,
+        data: {
+          totalSupply: existingStats.totalSupply + 1,
+          lastMintTime: timestamp,
+          // Update unique holders count if this is a new holder
+          uniqueHolders: toHolder ? existingStats.uniqueHolders : existingStats.uniqueHolders + 1,
+        }
+      });
+    } else {
+      // First mint for this collection
+      await CollectionStats.create({
+        id: statsId,
+        data: {
+          collection: collection,
+          totalSupply: 1,
+          uniqueHolders: 1,
+          lastMintTime: timestamp,
+          chainId: chainId,
+        }
+      });
+    }
   }
 });

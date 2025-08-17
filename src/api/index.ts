@@ -19,6 +19,29 @@ ponder.use("*", async (c, next) => {
 
 // ============= REST API ENDPOINTS =============
 
+// GET / - Root endpoint
+ponder.get("/", async (c) => {
+  return c.json({ 
+    service: "THJ Ponder Indexer",
+    status: "running",
+    endpoints: [
+      "/api/health",
+      "/api/stats", 
+      "/api/transfers/recent",
+      "/api/holders",
+      "/api/tokens/:tokenId",
+      "/api/owners/:address",
+      "/graphql"
+    ],
+    timestamp: Date.now()
+  });
+});
+
+// GET /home - Railway sometimes checks this
+ponder.get("/home", async (c) => {
+  return c.redirect("/");
+});
+
 // GET /api/health - Health check endpoint for Railway
 ponder.get("/api/health", async (c) => {
   return c.json({ 

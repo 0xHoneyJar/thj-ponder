@@ -29,14 +29,16 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
   
   await TransferEvent.create({
     id: transferId,
-    tokenId: tokenId,
-    from: from,
-    to: to,
-    isMint: isMint,
-    timestamp: timestamp,
-    blockNumber: blockNumber,
-    transactionHash: txHash,
-    logIndex: logIndex,
+    data: {
+      tokenId: tokenId,
+      from: from,
+      to: to,
+      isMint: isMint,
+      timestamp: timestamp,
+      blockNumber: blockNumber,
+      transactionHash: txHash,
+      logIndex: logIndex,
+    }
   });
 
   // Update or create token record
@@ -46,20 +48,24 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
     // Update existing token with new owner
     await Token.update({
       id: tokenId,
-      currentOwner: to,
-      lastTransferTime: timestamp,
-      transferCount: existingToken.transferCount + 1,
+      data: {
+        currentOwner: to,
+        lastTransferTime: timestamp,
+        transferCount: existingToken.transferCount + 1,
+      }
     });
   } else {
     // Create new token record (this is a mint)
     await Token.create({
       id: tokenId,
-      tokenId: BigInt(tokenId),
-      currentOwner: to,
-      mintedBy: to,
-      mintTime: timestamp,
-      lastTransferTime: timestamp,
-      transferCount: 1,
+      data: {
+        tokenId: BigInt(tokenId),
+        currentOwner: to,
+        mintedBy: to,
+        mintTime: timestamp,
+        lastTransferTime: timestamp,
+        transferCount: 1,
+      }
     });
   }
 
@@ -70,8 +76,10 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
     if (fromOwner && fromOwner.balance > 0) {
       await Owner.update({
         id: from,
-        balance: fromOwner.balance - 1,
-        lastActivityTime: timestamp,
+        data: {
+          balance: fromOwner.balance - 1,
+          lastActivityTime: timestamp,
+        }
       });
     }
   }
@@ -82,19 +90,23 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
   if (toOwner) {
     await Owner.update({
       id: to,
-      balance: toOwner.balance + 1,
-      totalReceived: toOwner.totalReceived + 1,
-      lastActivityTime: timestamp,
+      data: {
+        balance: toOwner.balance + 1,
+        totalReceived: toOwner.totalReceived + 1,
+        lastActivityTime: timestamp,
+      }
     });
   } else {
     await Owner.create({
       id: to,
-      address: to,
-      balance: 1,
-      totalReceived: 1,
-      totalSent: 0,
-      firstActivityTime: timestamp,
-      lastActivityTime: timestamp,
+      data: {
+        address: to,
+        balance: 1,
+        totalReceived: 1,
+        totalSent: 0,
+        firstActivityTime: timestamp,
+        lastActivityTime: timestamp,
+      }
     });
   }
 
@@ -104,7 +116,9 @@ ponder.on("HoneyJar1:Transfer", async ({ event, context }) => {
     if (fromOwner) {
       await Owner.update({
         id: from,
-        totalSent: fromOwner.totalSent + 1,
+        data: {
+          totalSent: fromOwner.totalSent + 1,
+        }
       });
     }
   }

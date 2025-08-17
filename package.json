@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "./start-simple.sh",
+    "start": "node railway-ponder.js",
+    "start:simple": "./start-simple.sh",
     "start:proxy": "node proxy-server.js",
     "start:old": "node server.js",
     "start:sh": "./start.sh",

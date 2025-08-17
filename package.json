@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "rm -rf .ponder .ponder-cache /tmp/.ponder* /app/.ponder /app/.ponder-cache && node server.js",
+    "start": "node server.js",
     "start:direct": "ponder start",
     "codegen": "ponder codegen"
   },

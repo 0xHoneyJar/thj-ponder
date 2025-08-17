@@ -4,6 +4,9 @@ import { http } from "viem";
 // Import ABIs
 import { HoneyJar1ABI } from "./abis/HoneyJar1";
 
+// Using HyperSync RPC for ultra-fast indexing
+// HyperSync is optimized for historical data queries and can sync 100x faster than standard RPCs
+
 // NFT Collection Configurations (Easily add more here)
 const NFT_COLLECTIONS = {
   HJ1: {
@@ -25,11 +28,11 @@ export default createConfig({
       transport: http(
         process.env.PONDER_RPC_URL_1 || 
         process.env.RPC_URL_MAINNET || 
-        "https://eth.llamarpc.com"
+        "https://1.rpc.hypersync.xyz" // HyperSync for super fast indexing
       ),
-      // Optional: Add rate limiting
-      pollingInterval: 12_000, // 12 seconds
-      maxRequestsPerSecond: 10,
+      // HyperSync can handle higher throughput
+      pollingInterval: 2_000, // 2 seconds for faster updates
+      maxRequestsPerSecond: 50, // HyperSync can handle more requests
     },
     // Uncomment for multi-chain support
     // berachain: {

@@ -8,7 +8,8 @@ cmds = ["pnpm install --frozen-lockfile || pnpm install"]
 cmds = ["pnpm codegen"]
 
 [start]
-cmd = "pnpm start"
+cmd = "sh ./start.sh"
 
 [variables]
 PORT = "42069"
+HOST = "0.0.0.0"

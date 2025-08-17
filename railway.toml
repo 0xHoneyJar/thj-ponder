@@ -3,10 +3,7 @@ builder = "nixpacks"
 buildCommand = "pnpm install && pnpm codegen"
 
 [deploy]
-startCommand = "pnpm start"
+startCommand = "sh ./start.sh"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "always"
-
-[[services]]
-name = "ponder"

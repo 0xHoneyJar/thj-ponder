@@ -3,11 +3,7 @@ builder = "nixpacks"
 buildCommand = "pnpm install && pnpm codegen"
 
 [deploy]
-startCommand = "pnpm start"
-healthcheckPath = "/api/health"
+startCommand = "node server.mjs"
+healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "always"
-
-[env]
-PORT = "${{PORT}}"
-HOST = "0.0.0.0"

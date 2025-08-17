@@ -8,7 +8,7 @@ import { HoneyJar1ABI } from "./abis/HoneyJar1";
 const NFT_COLLECTIONS = {
   HJ1: {
     address: "0xa20CF9B0874c3E46b344DEAEEa9c2e0C3E1db37d" as const, // HoneyJar 1 contract
-    startBlock: 21500000, // Recent block for faster testing
+    startBlock: 17090027, // Actual HoneyJar 1 deployment block
   },
   // Future collections can be added here:
   // HJ2: {

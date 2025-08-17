@@ -19,12 +19,18 @@ ponder.use("*", async (c, next) => {
 
 // ============= REST API ENDPOINTS =============
 
-// GET / - Root endpoint
+// GET / - Root endpoint with debug info
 ponder.get("/", async (c) => {
   return c.json({ 
     service: "THJ Ponder Indexer",
     status: "running",
+    environment: {
+      port: process.env.PORT || "42069",
+      railway: !!process.env.RAILWAY_ENVIRONMENT,
+      node_env: process.env.NODE_ENV,
+    },
     endpoints: [
+      "/health",
       "/api/health",
       "/api/stats", 
       "/api/transfers/recent",
@@ -42,7 +48,16 @@ ponder.get("/home", async (c) => {
   return c.redirect("/");
 });
 
-// GET /api/health - Health check endpoint for Railway
+// GET /health - Primary health check endpoint
+ponder.get("/health", async (c) => {
+  return c.json({ 
+    status: "healthy",
+    service: "thj-ponder",
+    timestamp: Date.now()
+  });
+});
+
+// GET /api/health - Alternative health check endpoint for Railway
 ponder.get("/api/health", async (c) => {
   return c.json({ 
     status: "healthy",

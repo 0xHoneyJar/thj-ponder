@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "node railway-ponder.js",
+    "start": "node server.mjs",
+    "start:direct": "ponder start",
+    "start:railway": "./start-railway.sh",
     "start:simple": "./start-simple.sh",
     "start:proxy": "node proxy-server.js",
-    "start:old": "node server.js",
-    "start:sh": "./start.sh",
-    "start:prod": "./start-production.sh",
     "codegen": "ponder codegen",
     "serve": "ponder serve",
     "build": "ponder codegen"

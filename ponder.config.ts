@@ -41,7 +41,7 @@ export default createConfig({
       network: "mainnet",
       abi: ERC721ABI,
       address: "0xa20CF9B0874c3E46b344DEAEEa9c2e0C3E1db37d",
-      startBlock: 17090027,
+      startBlock: 17085870,
     },
     HoneyJar2: {
       network: "arbitrum",

@@ -3,7 +3,7 @@ import { ponder } from "@/generated";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 ponder.on("HoneyJar6:Transfer", async ({ event, context }) => {
-  const { Transfer, Holder, CollectionStats } = context.db;
+  const { Transfer, Holder, CollectionStat } = context.db;
   
   const from = event.args.from.toLowerCase();
   const to = event.args.to.toLowerCase();
@@ -75,32 +75,37 @@ ponder.on("HoneyJar6:Transfer", async ({ event, context }) => {
   }
   // Update collection stats
   const statsId = "HoneyJar6";
-  const existingStats = await CollectionStats.findUnique({ id: statsId });
+  const existingStats = await CollectionStat.findUnique({ id: statsId });
   
-  if (isMint) {
-    // If it's a mint, increment total supply
-    if (existingStats) {
-      await CollectionStats.update({
-        id: statsId,
-        data: {
-          totalSupply: existingStats.totalSupply + 1,
-          lastMintTime: timestamp,
-          // Update unique holders count if this is a new holder
-          uniqueHolders: toHolder ? existingStats.uniqueHolders : existingStats.uniqueHolders + 1,
-        }
-      });
-    } else {
-      // First mint for this collection
-      await CollectionStats.create({
-        id: statsId,
-        data: {
-          collection: collection,
-          totalSupply: 1,
-          uniqueHolders: 1,
-          lastMintTime: timestamp,
-          chainId: chainId,
-        }
-      });
-    }
+  // Track the highest tokenId we've seen as the total supply
+  // This works for sequential minting contracts like HoneyJar
+  const currentTokenId = Number(event.args.tokenId);
+  
+  if (existingStats) {
+    // Always update if we see a higher tokenId or if it's a mint
+    const shouldUpdateSupply = currentTokenId > (existingStats.totalSupply || 0);
+    
+    await CollectionStat.update({
+      id: statsId,
+      data: {
+        // Use the highest tokenId as totalSupply (assuming sequential minting)
+        totalSupply: shouldUpdateSupply ? currentTokenId : existingStats.totalSupply,
+        lastMintTime: isMint ? timestamp : existingStats.lastMintTime,
+        // Update unique holders count if this is a new holder receiving tokens
+        uniqueHolders: !toHolder && to !== ZERO_ADDRESS ? existingStats.uniqueHolders + 1 : existingStats.uniqueHolders,
+      }
+    });
+  } else {
+    // First transfer for this collection
+    await CollectionStat.create({
+      id: statsId,
+      data: {
+        collection: collection,
+        totalSupply: currentTokenId, // Start with the first tokenId we see
+        uniqueHolders: to !== ZERO_ADDRESS ? 1 : 0,
+        lastMintTime: isMint ? timestamp : undefined,
+        chainId: chainId,
+      }
+    });
   }
 });

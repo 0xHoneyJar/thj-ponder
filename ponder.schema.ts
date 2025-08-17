@@ -24,7 +24,7 @@ export default createSchema((p) => ({
     chainId: p.int(), // Chain ID for the holder
   }),
   
-  CollectionStats: p.createTable({
+  CollectionStat: p.createTable({
     id: p.string(), // collection name (e.g., "HoneyJar1")
     collection: p.string(),
     totalSupply: p.int(), // Total number of NFTs minted

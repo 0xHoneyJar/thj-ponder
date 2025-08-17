@@ -3,6 +3,15 @@ import { graphql } from "@ponder/core";
 
 // ============= REST API ENDPOINTS =============
 
+// GET /api/health - Health check endpoint for Railway
+ponder.get("/api/health", async (c) => {
+  return c.json({ 
+    status: "healthy",
+    service: "thj-ponder",
+    timestamp: Date.now()
+  });
+});
+
 // GET /api/tokens/:tokenId - Get specific token info
 ponder.get("/api/tokens/:tokenId", async (c) => {
   const { Token, TransferEvent } = c.db;

@@ -23,7 +23,9 @@ export default createConfig({
     mainnet: {
       chainId: 1,
       transport: http(
-        process.env.PONDER_RPC_URL_1 || "https://eth.llamarpc.com"
+        process.env.PONDER_RPC_URL_1 || 
+        process.env.RPC_URL_MAINNET || 
+        "https://eth.llamarpc.com"
       ),
       // Optional: Add rate limiting
       pollingInterval: 12_000, // 12 seconds

@@ -1,5 +1,9 @@
 # 🚂 Deploy THJ Ponder to Railway
 
+## ⚠️ Important Railway Configuration Notes
+
+Railway deployment requires specific configuration to avoid health check failures and network endpoint errors.
+
 ## Quick Deploy (2 minutes)
 
 ### Step 1: Push to GitHub
@@ -30,19 +34,21 @@ git push -u origin main
 Click on your service and go to **Variables** tab. Add:
 
 ```env
-# Required
-HJ1_CONTRACT_ADDRESS=0x... # Your actual HJ1 contract
-HJ1_START_BLOCK=21000000   # Your actual start block
-PONDER_RPC_URL_1=https://eth.llamarpc.com  # Or your RPC
+# Required - MUST SET THESE TO AVOID NETWORK ERRORS
+PONDER_RPC_URL_1=https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY
+# Or use a free RPC (slower):
+# PONDER_RPC_URL_1=https://eth.llamarpc.com
 
 # Railway provides these automatically:
-# DATABASE_URL (auto-set by Railway)
-# PORT (auto-set by Railway)
+# DATABASE_URL (auto-set by Railway when you add Postgres)
+# PORT (auto-set by Railway, usually dynamic)
 
-# Optional
+# Optional but recommended
 NODE_ENV=production
 PONDER_LOG_LEVEL=info
 ```
+
+**⚠️ CRITICAL**: You MUST set `PONDER_RPC_URL_1` or the deployment will fail with "Failed to get private network endpoint" error!
 
 ### Step 5: Deploy!
 

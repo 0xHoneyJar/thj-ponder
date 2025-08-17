@@ -1,4 +1,8 @@
 import { ponder } from "@/generated";
+import { graphql } from "@ponder/core";
+
+// Enable GraphQL endpoint
+ponder.use("/graphql", graphql());
 
 ponder.get("/", async (c) => {
   return c.json({ 
@@ -8,13 +12,13 @@ ponder.get("/", async (c) => {
   });
 });
 
-// Simple proxies to GraphQL - Ponder handles the database access
+// Get recent mints with holder info
 ponder.get("/transfers/recent", async (c) => {
   try {
     const onlyMints = c.req.query("mints") === "true";
     const limit = parseInt(c.req.query("limit") || "20");
     
-    // Build GraphQL query
+    // Build GraphQL query for transfers
     const query = `
       query GetTransfers($where: TransferFilter, $limit: Int, $orderBy: String, $orderDirection: String) {
         transfers(where: $where, limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection) {
@@ -25,6 +29,7 @@ ponder.get("/transfers/recent", async (c) => {
             to
             timestamp
             blockNumber
+            transactionHash
           }
         }
       }
@@ -37,7 +42,7 @@ ponder.get("/transfers/recent", async (c) => {
       orderDirection: "desc"
     };
     
-    // Execute GraphQL query
+    // Execute GraphQL query internally
     const response = await fetch(`http://localhost:${process.env.PORT || 42069}/graphql`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,7 +65,7 @@ ponder.get("/transfers/recent", async (c) => {
         isMint: t.from === "0x0000000000000000000000000000000000000000",
         timestamp: Number(t.timestamp),
         blockNumber: Number(t.blockNumber),
-        txHash: t.id.split('-')[0]
+        txHash: t.transactionHash
       }))
     });
   } catch (error: any) {
@@ -69,24 +74,58 @@ ponder.get("/transfers/recent", async (c) => {
   }
 });
 
-// Simplified holders endpoint - returns mock data for now
+// Get top holders leaderboard
 ponder.get("/holders", async (c) => {
   try {
     const limit = parseInt(c.req.query("limit") || "10");
     
-    // For now, return mock data since we need to aggregate from transfers
-    // In production, you'd want to add a Holder table to the schema
-    const mockHolders = [
-      { address: "0x1234...5678", balance: 45, totalReceived: 45, totalSent: 0, lastActivity: Date.now() / 1000 },
-      { address: "0x2345...6789", balance: 32, totalReceived: 32, totalSent: 0, lastActivity: Date.now() / 1000 },
-      { address: "0x3456...7890", balance: 28, totalReceived: 28, totalSent: 0, lastActivity: Date.now() / 1000 },
-      { address: "0x4567...8901", balance: 21, totalReceived: 21, totalSent: 0, lastActivity: Date.now() / 1000 },
-      { address: "0x5678...9012", balance: 18, totalReceived: 18, totalSent: 0, lastActivity: Date.now() / 1000 },
-    ].slice(0, limit);
+    // Query holders ordered by balance
+    const query = `
+      query GetHolders($limit: Int, $orderBy: String, $orderDirection: String, $where: HolderFilter) {
+        holders(limit: $limit, orderBy: $orderBy, orderDirection: $orderDirection, where: $where) {
+          items {
+            id
+            address
+            balance
+            totalMinted
+            lastActivityTime
+            firstMintTime
+          }
+        }
+      }
+    `;
+    
+    const variables = {
+      limit: limit,
+      orderBy: "balance",
+      orderDirection: "desc",
+      where: { balance_gt: 0 } // Only holders with balance > 0
+    };
+    
+    const response = await fetch(`http://localhost:${process.env.PORT || 42069}/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables })
+    });
+    
+    const result = await response.json();
+    
+    if (result.errors) {
+      throw new Error(result.errors[0].message);
+    }
+    
+    // Format holder data
+    const holders = result.data.holders.items.map((h: any) => ({
+      address: h.address,
+      balance: h.balance,
+      totalReceived: h.balance + h.totalMinted, // Approximation
+      totalSent: 0, // Not tracked in simple schema
+      lastActivity: Number(h.lastActivityTime)
+    }));
     
     return c.json({
       success: true,
-      data: mockHolders
+      data: holders
     });
   } catch (error: any) {
     console.error("Error in /holders:", error);
@@ -94,15 +133,21 @@ ponder.get("/holders", async (c) => {
   }
 });
 
-// Simplified stats endpoint
+// Get collection stats
 ponder.get("/stats", async (c) => {
   try {
-    // Query total mints
+    // Query total mints and holder count
     const query = `
       query GetStats {
         transfers(where: { from: "0x0000000000000000000000000000000000000000" }) {
           items {
             id
+          }
+        }
+        holders(where: { balance_gt: 0 }) {
+          items {
+            id
+            balance
           }
         }
       }
@@ -115,16 +160,33 @@ ponder.get("/stats", async (c) => {
     });
     
     const result = await response.json();
+    
+    if (result.errors) {
+      throw new Error(result.errors[0].message);
+    }
+    
     const totalMints = result.data?.transfers?.items?.length || 0;
+    const holders = result.data?.holders?.items || [];
+    const uniqueHolders = holders.length;
+    
+    // Get top holders
+    const topHolders = holders
+      .sort((a: any, b: any) => b.balance - a.balance)
+      .slice(0, 10)
+      .map((h: any) => ({
+        address: h.id,
+        balance: h.balance,
+        percentage: totalMints > 0 ? (h.balance / totalMints) * 100 : 0
+      }));
     
     return c.json({
       success: true,
       data: {
         totalSupply: totalMints,
-        uniqueHolders: Math.floor(totalMints * 0.7), // Estimate
+        uniqueHolders: uniqueHolders,
         totalTransfers: totalMints * 2, // Estimate
         totalMints: totalMints,
-        topHolders: []
+        topHolders: topHolders
       }
     });
   } catch (error: any) {

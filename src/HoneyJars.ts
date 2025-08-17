@@ -2,7 +2,7 @@ import { ponder } from "@/generated";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-// Chain ID mapping
+// Chain ID mapping with correct contract addresses
 const CHAIN_IDS = {
   mainnet: 1,
   arbitrum: 42161,
@@ -11,14 +11,14 @@ const CHAIN_IDS = {
   base: 8453,
 } as const;
 
-// Create a handler for each HoneyJar collection
+// Create a handler for each HoneyJar collection with correct addresses
 const collections = [
-  { name: "HoneyJar1", chainId: CHAIN_IDS.mainnet },
-  { name: "HoneyJar2", chainId: CHAIN_IDS.arbitrum },
-  { name: "HoneyJar3", chainId: CHAIN_IDS.zora },
-  { name: "HoneyJar4", chainId: CHAIN_IDS.optimism },
-  { name: "HoneyJar5", chainId: CHAIN_IDS.base },
-  { name: "HoneyJar6", chainId: CHAIN_IDS.mainnet },
+  { name: "HoneyJar1", chainId: CHAIN_IDS.mainnet },    // 0xa20CF9B0874c3E46b344DEAEEa9c2e0C3E1db37d
+  { name: "HoneyJar2", chainId: CHAIN_IDS.arbitrum },   // 0x1b2751328F41D1A0b91f3710EDcd33E996591B72
+  { name: "HoneyJar3", chainId: CHAIN_IDS.zora },       // 0xE798c4D40BC050bc93c7F3B149A0dFE5cfC49Fb0
+  { name: "HoneyJar4", chainId: CHAIN_IDS.optimism },   // 0xe1D16Cc75C9f39A2e0f5131eB39d4b634b23F301
+  { name: "HoneyJar5", chainId: CHAIN_IDS.base },       // 0xbAd7B49D985bbFd3A22706c447Fb625A28f048B4
+  { name: "HoneyJar6", chainId: CHAIN_IDS.mainnet },    // 0x98Dc31A9648F04E23e4E36B0456D1951531C2a05
 ];
 
 // Register handlers for each collection

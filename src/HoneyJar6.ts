@@ -5,6 +5,12 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 ponder.on("HoneyJar6:Transfer", async ({ event, context }) => {
   const { Transfer, Holder, CollectionStat } = context.db;
   
+  // Validate this is mainnet data (latest mainnet block ~21M, not 41M+)
+  if (event.block.number > 30000000n) {
+    console.error(`Rejecting invalid block ${event.block.number} for mainnet - likely wrong chain data`);
+    return;
+  }
+  
   const from = event.args.from.toLowerCase();
   const to = event.args.to.toLowerCase();
   const timestamp = BigInt(event.block.timestamp);

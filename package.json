@@ -6,7 +6,8 @@
     "dev": "ponder dev",
     "start": "rm -rf .ponder && node server.js",
     "start:direct": "ponder start",
-    "codegen": "ponder codegen"
+    "codegen": "ponder codegen",
+    "test-db": "node test-db.js"
   },
   "dependencies": {
     "@ponder/core": "^0.6.4",

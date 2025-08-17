@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install"
+
+[deploy]
+startCommand = "pnpm start"
+healthcheckPath = "/api/stats"
+healthcheckTimeout = 300
+restartPolicyType = "always"
+
+[[services]]
+name = "ponder"
+port = 42069
+
+[services.ponder]
+internalPort = 42069
+protocol = "http"

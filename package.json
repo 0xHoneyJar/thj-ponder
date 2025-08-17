@@ -1,0 +1,24 @@
+{
+  "name": "thj-ponder",
+  "version": "1.0.0",
+  "description": "Scalable Ponder indexer for THJ NFT collections",
+  "type": "module",
+  "scripts": {
+    "dev": "ponder dev",
+    "start": "ponder start",
+    "codegen": "ponder codegen",
+    "serve": "ponder serve",
+    "build": "ponder codegen"
+  },
+  "dependencies": {
+    "@ponder/core": "^0.6.4",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

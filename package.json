@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "node server.js",
+    "start": "./start-simple.sh",
+    "start:old": "node server.js",
     "start:sh": "./start.sh",
+    "start:prod": "./start-production.sh",
     "codegen": "ponder codegen",
     "serve": "ponder serve",
     "build": "ponder codegen"

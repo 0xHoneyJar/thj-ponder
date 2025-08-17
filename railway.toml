@@ -3,7 +3,11 @@ builder = "nixpacks"
 buildCommand = "pnpm install && pnpm codegen"
 
 [deploy]
-startCommand = "sh ./start.sh"
+startCommand = "pnpm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "always"
+
+[env]
+PORT = "${{PORT}}"
+HOST = "0.0.0.0"

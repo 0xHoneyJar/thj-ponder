@@ -35,6 +35,12 @@ export default createConfig({
         process.env.PONDER_RPC_URL_8453 || "https://8453.rpc.hypersync.xyz"
       ),
     },
+    berachain: {
+      chainId: 80084,
+      transport: http(
+        process.env.PONDER_RPC_URL_80084 || "https://bartio.rpc.berachain.com"
+      ),
+    },
   },
   contracts: {
     HoneyJar1: {
@@ -72,6 +78,56 @@ export default createConfig({
       abi: ERC721ABI,
       address: "0x98Dc31A9648F04E23e4E36B0456D1951531C2a05",
       startBlock: 21642711,
+    },
+    // Berachain HoneyJar contracts
+    HoneyJar1Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0xEDC5dfd6f37464Cc91bbCE572b6fE2C97F1BC7b3",
+      startBlock: 866405,
+    },
+    HoneyJar2Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0x1c6c24caC266c791C4BA789C3EC91F04331725bd",
+      startBlock: 866405,
+    },
+    HoneyJar3Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0xF1E4A550772faBfc35B28b51eB8d0b6FCd1c4878",
+      startBlock: 866405,
+    },
+    HoneyJar4Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0xdB602aB4D6bD71C8d11542A9C8c936877a9A4f45",
+      startBlock: 866405,
+    },
+    HoneyJar5Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0x0263728e7F59F315c17d3C180aEade027a375F17",
+      startBlock: 866405,
+    },
+    HoneyJar6Bera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0xb62a9A21D98478F477e134E175Fd2003C15Cb83A",
+      startBlock: 866405,
+    },
+    // Honeycomb contracts
+    HoneycombEth: {
+      network: "mainnet",
+      abi: ERC721ABI,
+      address: "0xcb0477d1af5b8b05795d89d59f4667b59eae9244",
+      startBlock: 21804976,
+    },
+    HoneycombBera: {
+      network: "berachain",
+      abi: ERC721ABI,
+      address: "0x886D2176D899796cD1AfFA07Eff07B9b2B80f1be",
+      startBlock: 866405,
     },
   },
 });

@@ -54,13 +54,22 @@ async function handleTransfer(
     const fromHolderId = `${from}-${collectionName}-${chainId}`;
     const fromHolder = await Holder.findUnique({ id: fromHolderId });
     if (fromHolder && fromHolder.balance > 0) {
-      await Holder.update({
-        id: fromHolderId,
-        data: {
-          balance: fromHolder.balance - 1,
-          lastActivityTime: timestamp,
-        }
-      });
+      const newBalance = fromHolder.balance - 1;
+      
+      // Delete if balance reaches zero, otherwise update
+      if (newBalance === 0) {
+        await Holder.delete({
+          id: fromHolderId
+        });
+      } else {
+        await Holder.update({
+          id: fromHolderId,
+          data: {
+            balance: newBalance,
+            lastActivityTime: timestamp,
+          }
+        });
+      }
     }
   }
   
@@ -108,16 +117,24 @@ async function handleTransfer(
         const newBeraBalance = isBerachain
           ? Math.max(0, fromUserBalance.balanceBerachain - 1)
           : fromUserBalance.balanceBerachain;
+        const newTotal = newHomeBalance + newBeraBalance;
         
-        await UserBalance.update({
-          id: fromUserBalanceId,
-          data: {
-            balanceHomeChain: newHomeBalance,
-            balanceBerachain: newBeraBalance,
-            balanceTotal: newHomeBalance + newBeraBalance,
-            lastActivityTime: timestamp,
-          }
-        });
+        // Delete the record if balance reaches zero, otherwise update
+        if (newTotal === 0) {
+          await UserBalance.delete({
+            id: fromUserBalanceId
+          });
+        } else {
+          await UserBalance.update({
+            id: fromUserBalanceId,
+            data: {
+              balanceHomeChain: newHomeBalance,
+              balanceBerachain: newBeraBalance,
+              balanceTotal: newTotal,
+              lastActivityTime: timestamp,
+            }
+          });
+        }
       }
     }
     

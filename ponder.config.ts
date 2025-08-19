@@ -129,5 +129,58 @@ export default createConfig({
       address: "0x886D2176D899796cD1AfFA07Eff07B9b2B80f1be",
       startBlock: 866405,
     },
+    // MoneycombVault contract on Berachain
+    MoneycombVault: {
+      network: "berachain",
+      abi: [
+        // Account events
+        {
+          type: "event",
+          name: "AccountOpened",
+          inputs: [
+            { name: "user", type: "address", indexed: true },
+            { name: "accountIndex", type: "uint256", indexed: true },
+            { name: "honeycombId", type: "uint256", indexed: true },
+          ],
+        },
+        {
+          type: "event",
+          name: "AccountClosed",
+          inputs: [
+            { name: "user", type: "address", indexed: true },
+            { name: "accountIndex", type: "uint256", indexed: true },
+            { name: "honeycombId", type: "uint256", indexed: true },
+          ],
+        },
+        {
+          type: "event",
+          name: "HJBurned",
+          inputs: [
+            { name: "user", type: "address", indexed: true },
+            { name: "accountIndex", type: "uint256", indexed: true },
+            { name: "hjGen", type: "uint256", indexed: true },
+          ],
+        },
+        {
+          type: "event",
+          name: "SharesMinted",
+          inputs: [
+            { name: "user", type: "address", indexed: true },
+            { name: "accountIndex", type: "uint256", indexed: false },
+            { name: "shares", type: "uint256", indexed: false },
+          ],
+        },
+        {
+          type: "event",
+          name: "RewardClaimed",
+          inputs: [
+            { name: "user", type: "address", indexed: true },
+            { name: "reward", type: "uint256", indexed: false },
+          ],
+        },
+      ],
+      address: "0x9279B2227B57f349A0CE552B25Af341e735f6309", // Test vault contract
+      startBlock: 866405,
+    },
   },
 });

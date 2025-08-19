@@ -297,3 +297,275 @@ ponder.on("HoneycombEth:Transfer", async ({ event, context }) => {
 ponder.on("HoneycombBera:Transfer", async ({ event, context }) => {
   await handleTransfer(event, context, "Honeycomb", BERACHAIN_ID);
 });
+
+// ============================================
+// VAULT EVENT HANDLERS
+// ============================================
+
+// Handle vault account opening
+ponder.on("MoneycombVault:AccountOpened", async ({ event, context }) => {
+  const { Vault, VaultActivity, UserVaultSummary } = context.db;
+  
+  const user = event.args.user.toLowerCase();
+  const accountIndex = Number(event.args.accountIndex);
+  const honeycombId = event.args.honeycombId;
+  const timestamp = BigInt(event.block.timestamp);
+  
+  const vaultId = `${user}-${accountIndex}`;
+  const activityId = `${event.transaction.hash}-${event.log.logIndex}`;
+  
+  // Create vault record
+  await Vault.create({
+    id: vaultId,
+    data: {
+      user: user,
+      accountIndex: accountIndex,
+      honeycombId: honeycombId,
+      isActive: true,
+      shares: 0n,
+      totalBurned: 0,
+      burnedGen1: false,
+      burnedGen2: false,
+      burnedGen3: false,
+      burnedGen4: false,
+      burnedGen5: false,
+      burnedGen6: false,
+      createdAt: timestamp,
+      lastActivityTime: timestamp,
+    }
+  });
+  
+  // Record activity
+  await VaultActivity.create({
+    id: activityId,
+    data: {
+      user: user,
+      accountIndex: accountIndex,
+      type: "opened",
+      timestamp: timestamp,
+      blockNumber: BigInt(event.block.number),
+      transactionHash: event.transaction.hash,
+      honeycombId: honeycombId,
+    }
+  });
+  
+  // Update user summary
+  const userSummary = await UserVaultSummary.findUnique({ id: user });
+  if (userSummary) {
+    await UserVaultSummary.update({
+      id: user,
+      data: {
+        totalVaults: userSummary.totalVaults + 1,
+        activeVaults: userSummary.activeVaults + 1,
+        lastActivityTime: timestamp,
+      }
+    });
+  } else {
+    await UserVaultSummary.create({
+      id: user,
+      data: {
+        user: user,
+        totalVaults: 1,
+        activeVaults: 1,
+        totalShares: 0n,
+        totalRewardsClaimed: 0n,
+        totalHJsBurned: 0,
+        firstVaultTime: timestamp,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+});
+
+// Handle HoneyJar burning
+ponder.on("MoneycombVault:HJBurned", async ({ event, context }) => {
+  const { Vault, VaultActivity, UserVaultSummary } = context.db;
+  
+  const user = event.args.user.toLowerCase();
+  const accountIndex = Number(event.args.accountIndex);
+  const hjGen = Number(event.args.hjGen);
+  const timestamp = BigInt(event.block.timestamp);
+  
+  const vaultId = `${user}-${accountIndex}`;
+  const activityId = `${event.transaction.hash}-${event.log.logIndex}`;
+  
+  // Update vault record
+  const vault = await Vault.findUnique({ id: vaultId });
+  if (vault) {
+    const burnedGenField = `burnedGen${hjGen}` as keyof typeof vault;
+    await Vault.update({
+      id: vaultId,
+      data: {
+        totalBurned: vault.totalBurned + 1,
+        [`burnedGen${hjGen}`]: true,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+  
+  // Record activity
+  await VaultActivity.create({
+    id: activityId,
+    data: {
+      user: user,
+      accountIndex: accountIndex,
+      type: "burned",
+      timestamp: timestamp,
+      blockNumber: BigInt(event.block.number),
+      transactionHash: event.transaction.hash,
+      hjGen: hjGen,
+    }
+  });
+  
+  // Update user summary
+  const userSummary = await UserVaultSummary.findUnique({ id: user });
+  if (userSummary) {
+    await UserVaultSummary.update({
+      id: user,
+      data: {
+        totalHJsBurned: userSummary.totalHJsBurned + 1,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+});
+
+// Handle shares minting
+ponder.on("MoneycombVault:SharesMinted", async ({ event, context }) => {
+  const { Vault, VaultActivity, UserVaultSummary } = context.db;
+  
+  const user = event.args.user.toLowerCase();
+  const accountIndex = Number(event.args.accountIndex);
+  const shares = event.args.shares;
+  const timestamp = BigInt(event.block.timestamp);
+  
+  const vaultId = `${user}-${accountIndex}`;
+  const activityId = `${event.transaction.hash}-${event.log.logIndex}`;
+  
+  // Update vault shares
+  const vault = await Vault.findUnique({ id: vaultId });
+  if (vault) {
+    await Vault.update({
+      id: vaultId,
+      data: {
+        shares: vault.shares + shares,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+  
+  // Record activity
+  await VaultActivity.create({
+    id: activityId,
+    data: {
+      user: user,
+      accountIndex: accountIndex,
+      type: "shares_minted",
+      timestamp: timestamp,
+      blockNumber: BigInt(event.block.number),
+      transactionHash: event.transaction.hash,
+      shares: shares,
+    }
+  });
+  
+  // Update user summary
+  const userSummary = await UserVaultSummary.findUnique({ id: user });
+  if (userSummary) {
+    await UserVaultSummary.update({
+      id: user,
+      data: {
+        totalShares: userSummary.totalShares + shares,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+});
+
+// Handle reward claims
+ponder.on("MoneycombVault:RewardClaimed", async ({ event, context }) => {
+  const { VaultActivity, UserVaultSummary } = context.db;
+  
+  const user = event.args.user.toLowerCase();
+  const reward = event.args.reward;
+  const timestamp = BigInt(event.block.timestamp);
+  
+  const activityId = `${event.transaction.hash}-${event.log.logIndex}`;
+  
+  // Record activity
+  await VaultActivity.create({
+    id: activityId,
+    data: {
+      user: user,
+      accountIndex: 0, // Rewards are not vault-specific
+      type: "claimed",
+      timestamp: timestamp,
+      blockNumber: BigInt(event.block.number),
+      transactionHash: event.transaction.hash,
+      reward: reward,
+    }
+  });
+  
+  // Update user summary
+  const userSummary = await UserVaultSummary.findUnique({ id: user });
+  if (userSummary) {
+    await UserVaultSummary.update({
+      id: user,
+      data: {
+        totalRewardsClaimed: userSummary.totalRewardsClaimed + reward,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+});
+
+// Handle vault closing
+ponder.on("MoneycombVault:AccountClosed", async ({ event, context }) => {
+  const { Vault, VaultActivity, UserVaultSummary } = context.db;
+  
+  const user = event.args.user.toLowerCase();
+  const accountIndex = Number(event.args.accountIndex);
+  const honeycombId = event.args.honeycombId;
+  const timestamp = BigInt(event.block.timestamp);
+  
+  const vaultId = `${user}-${accountIndex}`;
+  const activityId = `${event.transaction.hash}-${event.log.logIndex}`;
+  
+  // Update vault record
+  const vault = await Vault.findUnique({ id: vaultId });
+  if (vault) {
+    await Vault.update({
+      id: vaultId,
+      data: {
+        isActive: false,
+        closedAt: timestamp,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+  
+  // Record activity
+  await VaultActivity.create({
+    id: activityId,
+    data: {
+      user: user,
+      accountIndex: accountIndex,
+      type: "closed",
+      timestamp: timestamp,
+      blockNumber: BigInt(event.block.number),
+      transactionHash: event.transaction.hash,
+      honeycombId: honeycombId,
+    }
+  });
+  
+  // Update user summary
+  const userSummary = await UserVaultSummary.findUnique({ id: user });
+  if (userSummary && userSummary.activeVaults > 0) {
+    await UserVaultSummary.update({
+      id: user,
+      data: {
+        activeVaults: userSummary.activeVaults - 1,
+        lastActivityTime: timestamp,
+      }
+    });
+  }
+});

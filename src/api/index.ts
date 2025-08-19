@@ -114,16 +114,71 @@ ponder.get("/stats/:collection/:chainId", async (c) => {
   }
 });
 
-// Get recent transfers
+// Get recent mints for live activity feed
 ponder.get("/transfers/recent", async (c) => {
   try {
+    // Parse query parameters
+    const url = new URL(c.req.url);
+    const onlyMints = url.searchParams.get("mints") === "true";
+    const limit = parseInt(url.searchParams.get("limit") || "20");
+    const collection = url.searchParams.get("collection"); // Optional filter
+    
+    // Build GraphQL query
+    const whereClause = collection ? `where: {collection: "${collection}"}, ` : "";
+    const query = `
+      query RecentMints {
+        mints(${whereClause}orderBy: "timestamp", orderDirection: "desc", limit: ${limit}) {
+          items {
+            tokenId
+            to
+            timestamp
+            blockNumber
+            transactionHash
+            collection
+            chainId
+          }
+        }
+      }
+    `;
+    
+    // Execute GraphQL query internally
+    const origin = c.req.headers.get("host") || "localhost:42069";
+    const protocol = origin.includes("localhost") ? "http" : "https";
+    const graphqlUrl = `${protocol}://${origin}/graphql`;
+    
+    const response = await fetch(graphqlUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
+    
+    const result: any = await response.json();
+    
+    // Transform GraphQL response to match expected format
+    if (result?.data?.mints?.items) {
+      const transformedData = result.data.mints.items.map((mint: any) => ({
+        tokenId: mint.tokenId,
+        from: "0x0000000000000000000000000000000000000000", // Mints are always from zero address
+        to: mint.to,
+        isMint: true,
+        timestamp: parseInt(mint.timestamp),
+        blockNumber: parseInt(mint.blockNumber),
+        txHash: mint.transactionHash,
+        collection: mint.collection,
+        chainId: mint.chainId,
+      }));
+      
+      return c.json({
+        success: true,
+        data: transformedData,
+      });
+    }
+    
     return c.json({
       success: true,
-      data: {
-        transfers: [],
-        count: 0,
-        message: "Use GraphQL endpoint at /graphql for live data",
-      },
+      data: [],
     });
   } catch (error: any) {
     console.error("Error in /transfers/recent:", error);

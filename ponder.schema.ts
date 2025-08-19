@@ -1,6 +1,18 @@
 import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
+  // Track only mints for live activity feed
+  Mint: p.createTable({
+    id: p.string(),
+    tokenId: p.bigint(),
+    to: p.string(),
+    timestamp: p.bigint(),
+    blockNumber: p.bigint(),
+    transactionHash: p.string(),
+    collection: p.string(), // HoneyJar1, HoneyJar2, etc.
+    chainId: p.int(),
+  }),
+  
   Holder: p.createTable({
     id: p.string(), // wallet address + collection + chainId
     address: p.string(),

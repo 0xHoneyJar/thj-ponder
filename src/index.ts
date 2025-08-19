@@ -32,7 +32,7 @@ async function handleTransfer(
   collectionName: string,
   chainId: number
 ) {
-  const { Transfer, Holder, CollectionStat, UserBalance } = context.db;
+  const { Holder, CollectionStat, UserBalance } = context.db;
   
   const from = event.args.from.toLowerCase();
   const to = event.args.to.toLowerCase();
@@ -46,21 +46,6 @@ async function handleTransfer(
   const isBerachain = chainId === BERACHAIN_ID;
   const homeChainId = HOME_CHAIN_IDS[generation];
   const isHomeChain = chainId === homeChainId;
-  
-  // Create transfer record
-  await Transfer.create({
-    id: `${collectionName}-${chainId}-${event.transaction.hash}-${event.log.logIndex}`,
-    data: {
-      tokenId: event.args.tokenId,
-      from: from,
-      to: to,
-      timestamp: timestamp,
-      blockNumber: BigInt(event.block.number),
-      transactionHash: event.transaction.hash,
-      collection: collectionName,
-      chainId: chainId,
-    }
-  });
   
   // Update Holder balances (per collection per chain)
   

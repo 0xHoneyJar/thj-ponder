@@ -1,18 +1,6 @@
 import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
-  Transfer: p.createTable({
-    id: p.string(),
-    tokenId: p.bigint(),
-    from: p.string(),
-    to: p.string(),
-    timestamp: p.bigint(),
-    blockNumber: p.bigint(),
-    transactionHash: p.string(),
-    collection: p.string(), // HoneyJar1, HoneyJar2, etc.
-    chainId: p.int(), // Chain ID for the transfer
-  }),
-  
   Holder: p.createTable({
     id: p.string(), // wallet address + collection + chainId
     address: p.string(),

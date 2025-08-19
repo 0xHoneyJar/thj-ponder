@@ -36,9 +36,9 @@ export default createConfig({
       ),
     },
     berachain: {
-      chainId: 80084,
+      chainId: 80094,
       transport: http(
-        process.env.PONDER_RPC_URL_80084 || "https://bartio.rpc.berachain.com"
+        process.env.PONDER_RPC_URL_80094 || "https://80094.rpc.hypersync.xyz"
       ),
     },
   },

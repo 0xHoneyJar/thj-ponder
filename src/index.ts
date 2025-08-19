@@ -1,7 +1,7 @@
 import { ponder } from "@/generated";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const BERACHAIN_ID = 80084;
+const BERACHAIN_ID = 80094;
 
 // Map collection names to their generation numbers
 const COLLECTION_TO_GENERATION: Record<string, number> = {

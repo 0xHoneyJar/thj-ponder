@@ -79,6 +79,31 @@ export default createConfig({
       address: "0x98Dc31A9648F04E23e4E36B0456D1951531C2a05",
       startBlock: 21642711,
     },
+    // Ethereum mainnet bridged HoneyJar contracts
+    HoneyJar2Eth: {
+      network: "mainnet",
+      abi: ERC721ABI,
+      address: "0x3f4DD25BA6Fb6441Bfd1a869Cbda6a511966456D",
+      startBlock: 18000000, // Adjust if you know the exact block
+    },
+    HoneyJar3Eth: {
+      network: "mainnet",
+      abi: ERC721ABI,
+      address: "0x1B4B506619Caa3ef6ED5EE85325eA0e8b8feB041",
+      startBlock: 19000000, // Adjust if you know the exact block
+    },
+    HoneyJar4Eth: {
+      network: "mainnet",
+      abi: ERC721ABI,
+      address: "0xDF7362A2d9c71E195C328989fcEdbb994AC99DBE",
+      startBlock: 19500000, // Adjust if you know the exact block
+    },
+    HoneyJar5Eth: {
+      network: "mainnet",
+      abi: ERC721ABI,
+      address: "0x8a90d208666aaDD3832734970Ed12B9E01e80952",
+      startBlock: 20000000, // Adjust if you know the exact block
+    },
     // Berachain HoneyJar contracts
     HoneyJar1Bera: {
       network: "berachain",

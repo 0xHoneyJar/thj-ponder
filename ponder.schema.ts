@@ -30,15 +30,17 @@ export default createSchema((p) => ({
     address: p.string(),
     generation: p.int(), // 1-6 for HoneyJar generations, 0 for Honeycomb
     
-    // Balances per chain
+    // Balances per chain (3 possible chains)
     balanceHomeChain: p.int(), // Balance on home chain (Eth, Arbitrum, Zora, etc.)
+    balanceEthereum: p.int(), // Balance on Ethereum (for non-native collections)
     balanceBerachain: p.int(), // Balance on Berachain
-    balanceTotal: p.int(), // Total across both chains
+    balanceTotal: p.int(), // Total across all chains
     
     // Minted counts per chain
     mintedHomeChain: p.int(), // How many minted on home chain
+    mintedEthereum: p.int(), // How many minted/bridged on Ethereum
     mintedBerachain: p.int(), // How many minted on Berachain
-    mintedTotal: p.int(), // Total minted across both chains
+    mintedTotal: p.int(), // Total minted across all chains
     
     lastActivityTime: p.bigint(),
     firstMintTime: p.bigint().optional(),

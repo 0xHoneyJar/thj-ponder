@@ -3,6 +3,19 @@ import { ponder } from "@/generated";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const BERACHAIN_ID = 80094;
 
+// Kingdomly proxy bridge contracts (these hold NFTs when bridged to Berachain)
+// We should exclude these from holder counts to avoid double-counting
+const PROXY_CONTRACTS: Record<string, string> = {
+  // Home chain -> Berachain proxy contracts (lowercase)
+  "HoneyJar1": "0xe0b791529f7876dc2b9d748a2e6570e605f40e5e".toLowerCase(),
+  "HoneyJar2": "0xd1d5df5f85c0fcbdc5c9757272de2ee5296ed512".toLowerCase(),
+  "HoneyJar3": "0x3992605f13bc182c0b0c60029fcbb21c0626a5f1".toLowerCase(),
+  "HoneyJar4": "0xeeaa4926019eaed089b8b66b544deb320c04e421".toLowerCase(),
+  "HoneyJar5": "0x00331b0e835c511489dba62a2b16b8fa380224f9".toLowerCase(),
+  "HoneyJar6": "0x0de0f0a9f7f1a56dafd025d0f31c31c6cb190346".toLowerCase(),
+  "Honeycomb": "0x33a76173680427cba3ffc3a625b7bc43b08ce0c5".toLowerCase(),
+};
+
 // Map collection names to their generation numbers
 const COLLECTION_TO_GENERATION: Record<string, number> = {
   "HoneyJar1": 1,
@@ -46,6 +59,17 @@ async function handleTransfer(
   const isBerachain = chainId === BERACHAIN_ID;
   const homeChainId = HOME_CHAIN_IDS[generation];
   const isHomeChain = chainId === homeChainId;
+  const isEthereum = chainId === 1;
+  const isThirdChain = !isHomeChain && !isBerachain; // For NFTs bridged to Ethereum when not native
+  
+  // Check if this is a transfer to/from a proxy bridge contract
+  const proxyAddress = PROXY_CONTRACTS[baseCollection];
+  const isToProxy = proxyAddress && to === proxyAddress;
+  const isFromProxy = proxyAddress && from === proxyAddress;
+  
+  // Treat transfers TO proxy as "bridging out" (like burns for counting purposes)
+  // Treat transfers FROM proxy as "bridging in" (like mints for counting purposes)
+  // This prevents double-counting when NFTs are locked in the bridge
   
   // Track mints for live activity feed
   if (isMint) {
@@ -65,8 +89,8 @@ async function handleTransfer(
   
   // Update Holder balances (per collection per chain)
   
-  // Handle "from" holder (unless it's a mint)
-  if (!isMint) {
+  // Handle "from" holder (unless it's a mint or from proxy)
+  if (!isMint && !isFromProxy) {
     const fromHolderId = `${from}-${collectionName}-${chainId}`;
     const fromHolder = await Holder.findUnique({ id: fromHolderId });
     if (fromHolder && fromHolder.balance > 0) {
@@ -89,8 +113,8 @@ async function handleTransfer(
     }
   }
   
-  // Handle "to" holder (unless it's a burn)
-  if (!isBurn) {
+  // Handle "to" holder (unless it's a burn or to proxy)
+  if (!isBurn && !isToProxy) {
     const toHolderId = `${to}-${collectionName}-${chainId}`;
     const toHolder = await Holder.findUnique({ id: toHolderId });
     
@@ -121,8 +145,9 @@ async function handleTransfer(
   
   // Update UserBalance (cross-chain totals)
   if (generation >= 0) {
-    // Update "from" user balance (unless it's a mint)
-    if (!isMint) {
+    // Update "from" user balance (unless it's a mint or from proxy)
+    // We skip proxy "from" because it's just returning from bridge
+    if (!isMint && !isFromProxy) {
       const fromUserBalanceId = `${from}-gen${generation}`;
       const fromUserBalance = await UserBalance.findUnique({ id: fromUserBalanceId });
       
@@ -130,10 +155,13 @@ async function handleTransfer(
         const newHomeBalance = isHomeChain 
           ? Math.max(0, fromUserBalance.balanceHomeChain - 1)
           : fromUserBalance.balanceHomeChain;
+        const newEthereumBalance = (isEthereum && !isHomeChain)
+          ? Math.max(0, fromUserBalance.balanceEthereum - 1)
+          : fromUserBalance.balanceEthereum;
         const newBeraBalance = isBerachain
           ? Math.max(0, fromUserBalance.balanceBerachain - 1)
           : fromUserBalance.balanceBerachain;
-        const newTotal = newHomeBalance + newBeraBalance;
+        const newTotal = newHomeBalance + newEthereumBalance + newBeraBalance;
         
         // Delete the record if balance reaches zero, otherwise update
         if (newTotal === 0) {
@@ -145,6 +173,7 @@ async function handleTransfer(
             id: fromUserBalanceId,
             data: {
               balanceHomeChain: newHomeBalance,
+              balanceEthereum: newEthereumBalance,
               balanceBerachain: newBeraBalance,
               balanceTotal: newTotal,
               lastActivityTime: timestamp,
@@ -154,8 +183,9 @@ async function handleTransfer(
       }
     }
     
-    // Update "to" user balance (unless it's a burn)
-    if (!isBurn) {
+    // Update "to" user balance (unless it's a burn or to proxy)
+    // We skip proxy "to" because the NFT is being locked in bridge
+    if (!isBurn && !isToProxy) {
       const toUserBalanceId = `${to}-gen${generation}`;
       const toUserBalance = await UserBalance.findUnique({ id: toUserBalanceId });
       
@@ -163,12 +193,18 @@ async function handleTransfer(
         const newHomeBalance = isHomeChain 
           ? toUserBalance.balanceHomeChain + 1
           : toUserBalance.balanceHomeChain;
+        const newEthereumBalance = (isEthereum && !isHomeChain)
+          ? toUserBalance.balanceEthereum + 1
+          : toUserBalance.balanceEthereum;
         const newBeraBalance = isBerachain
           ? toUserBalance.balanceBerachain + 1
           : toUserBalance.balanceBerachain;
         const newMintedHome = (isMint && isHomeChain)
           ? toUserBalance.mintedHomeChain + 1
           : toUserBalance.mintedHomeChain;
+        const newMintedEth = (isMint && isEthereum && !isHomeChain)
+          ? toUserBalance.mintedEthereum + 1
+          : toUserBalance.mintedEthereum;
         const newMintedBera = (isMint && isBerachain)
           ? toUserBalance.mintedBerachain + 1
           : toUserBalance.mintedBerachain;
@@ -177,11 +213,13 @@ async function handleTransfer(
           id: toUserBalanceId,
           data: {
             balanceHomeChain: newHomeBalance,
+            balanceEthereum: newEthereumBalance,
             balanceBerachain: newBeraBalance,
-            balanceTotal: newHomeBalance + newBeraBalance,
+            balanceTotal: newHomeBalance + newEthereumBalance + newBeraBalance,
             mintedHomeChain: newMintedHome,
+            mintedEthereum: newMintedEth,
             mintedBerachain: newMintedBera,
-            mintedTotal: newMintedHome + newMintedBera,
+            mintedTotal: newMintedHome + newMintedEth + newMintedBera,
             lastActivityTime: timestamp,
           }
         });
@@ -192,9 +230,11 @@ async function handleTransfer(
             address: to,
             generation: generation,
             balanceHomeChain: isHomeChain ? 1 : 0,
+            balanceEthereum: (isEthereum && !isHomeChain) ? 1 : 0,
             balanceBerachain: isBerachain ? 1 : 0,
             balanceTotal: 1,
             mintedHomeChain: (isMint && isHomeChain) ? 1 : 0,
+            mintedEthereum: (isMint && isEthereum && !isHomeChain) ? 1 : 0,
             mintedBerachain: (isMint && isBerachain) ? 1 : 0,
             mintedTotal: isMint ? 1 : 0,
             lastActivityTime: timestamp,
@@ -287,6 +327,23 @@ ponder.on("HoneyJar5Bera:Transfer", async ({ event, context }) => {
 
 ponder.on("HoneyJar6Bera:Transfer", async ({ event, context }) => {
   await handleTransfer(event, context, "HoneyJar6", BERACHAIN_ID);
+});
+
+// Register handlers for Ethereum bridged HoneyJar contracts
+ponder.on("HoneyJar2Eth:Transfer", async ({ event, context }) => {
+  await handleTransfer(event, context, "HoneyJar2", 1);
+});
+
+ponder.on("HoneyJar3Eth:Transfer", async ({ event, context }) => {
+  await handleTransfer(event, context, "HoneyJar3", 1);
+});
+
+ponder.on("HoneyJar4Eth:Transfer", async ({ event, context }) => {
+  await handleTransfer(event, context, "HoneyJar4", 1);
+});
+
+ponder.on("HoneyJar5Eth:Transfer", async ({ event, context }) => {
+  await handleTransfer(event, context, "HoneyJar5", 1);
 });
 
 // Register handlers for Honeycomb contracts

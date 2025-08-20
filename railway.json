@@ -1,0 +1,21 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install"
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "healthcheckPath": "/status",
+    "healthcheckTimeout": 30
+  },
+  "envVars": {
+    "PONDER_LOG_LEVEL": "info",
+    "FORCE_REINDEX": {
+      "description": "Set to 'true' to force a complete re-index on next deploy",
+      "default": "false"
+    }
+  }
+}

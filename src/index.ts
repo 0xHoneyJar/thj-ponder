@@ -245,37 +245,49 @@ async function handleTransfer(
     }
   }
   
-  // Update collection stats
-  const statsId = `${collectionName}-${chainId}`;
-  const existingStats = await CollectionStat.findUnique({ id: statsId });
-  
-  const currentTokenId = Number(event.args.tokenId);
-  
-  if (existingStats) {
-    const shouldUpdateSupply = currentTokenId > (existingStats.totalSupply || 0);
-    const toHolderExists = await Holder.findUnique({ id: `${to}-${collectionName}-${chainId}` });
+  // Update collection stats (ONLY for real mints, not proxy transfers)
+  // Skip stats update if this is a transfer to/from proxy contract
+  if (!isToProxy && !isFromProxy) {
+    const statsId = `${collectionName}-${chainId}`;
+    const existingStats = await CollectionStat.findUnique({ id: statsId });
     
-    await CollectionStat.update({
-      id: statsId,
-      data: {
-        totalSupply: shouldUpdateSupply ? currentTokenId : existingStats.totalSupply,
-        lastMintTime: isMint ? timestamp : existingStats.lastMintTime,
-        uniqueHolders: (!toHolderExists && !isBurn) 
-          ? existingStats.uniqueHolders + 1 
-          : existingStats.uniqueHolders,
-      }
-    });
-  } else {
-    await CollectionStat.create({
-      id: statsId,
-      data: {
-        collection: collectionName,
-        totalSupply: currentTokenId,
-        uniqueHolders: !isBurn ? 1 : 0,
-        lastMintTime: isMint ? timestamp : undefined,
-        chainId: chainId,
-      }
-    });
+    const currentTokenId = Number(event.args.tokenId);
+    
+    // Determine if collection is 0-indexed or 1-indexed
+    // Most NFT collections start at 1, but some start at 0
+    // For 0-indexed: totalSupply = highest tokenId + 1
+    // For 1-indexed: totalSupply = highest tokenId
+    const isZeroIndexed = collectionName === "Honeycomb"; // Add others if known
+    const adjustedSupply = isZeroIndexed ? currentTokenId + 1 : currentTokenId;
+    
+    if (existingStats) {
+      const currentMaxSupply = existingStats.totalSupply || 0;
+      const shouldUpdateSupply = isMint && adjustedSupply > currentMaxSupply;
+      const toHolderExists = await Holder.findUnique({ id: `${to}-${collectionName}-${chainId}` });
+      
+      await CollectionStat.update({
+        id: statsId,
+        data: {
+          totalSupply: shouldUpdateSupply ? adjustedSupply : currentMaxSupply,
+          lastMintTime: isMint ? timestamp : existingStats.lastMintTime,
+          uniqueHolders: (!toHolderExists && !isBurn && !isToProxy) 
+            ? existingStats.uniqueHolders + 1 
+            : existingStats.uniqueHolders,
+        }
+      });
+    } else if (isMint) {
+      // Only create stats entry for actual mints
+      await CollectionStat.create({
+        id: statsId,
+        data: {
+          collection: collectionName,
+          totalSupply: adjustedSupply,
+          uniqueHolders: 1,
+          lastMintTime: timestamp,
+          chainId: chainId,
+        }
+      });
+    }
   }
 }
 

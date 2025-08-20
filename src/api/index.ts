@@ -103,6 +103,8 @@ ponder.get("/stats/:collection/:chainId", async (c) => {
       chainId: chainId,
       data: {
         totalSupply: 0,
+        totalMinted: 0,
+        totalBurned: 0,
         uniqueHolders: 0,
         lastMintTime: null,
         message: "Use GraphQL endpoint at /graphql for live data",

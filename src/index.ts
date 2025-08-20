@@ -45,7 +45,7 @@ async function handleTransfer(
   collectionName: string,
   chainId: number
 ) {
-  const { Mint, Holder, CollectionStat, UserBalance } = context.db;
+  const { Mint, Holder, CollectionStat, UserBalance, Token } = context.db;
   
   const from = event.args.from.toLowerCase();
   const to = event.args.to.toLowerCase();
@@ -245,34 +245,77 @@ async function handleTransfer(
     }
   }
   
-  // Update collection stats (ONLY for real mints, not proxy transfers)
-  // Skip stats update if this is a transfer to/from proxy contract
+  // Track individual tokens for accurate supply counts
+  const tokenId = event.args.tokenId;
+  const tokenKey = `${collectionName}-${chainId}-${tokenId}`;
+  
+  // Handle token tracking
+  const existingToken = await Token.findUnique({ id: tokenKey });
+  
+  if (isMint && !existingToken) {
+    // Create new token record on mint
+    await Token.create({
+      id: tokenKey,
+      data: {
+        collection: collectionName,
+        chainId: chainId,
+        tokenId: tokenId,
+        owner: to,
+        isBurned: false,
+        mintedAt: timestamp,
+        lastTransferTime: timestamp,
+      }
+    });
+  } else if (existingToken && !existingToken.isBurned) {
+    // Update token owner on transfer
+    await Token.update({
+      id: tokenKey,
+      data: {
+        owner: isBurn ? ZERO_ADDRESS : (isToProxy ? proxyAddress || to : to),
+        isBurned: isBurn,
+        lastTransferTime: timestamp,
+      }
+    });
+  }
+  
+  // Update collection stats with accurate counts
+  // Skip stats update if this is a transfer to/from proxy contract (just moving between chains)
   if (!isToProxy && !isFromProxy) {
     const statsId = `${collectionName}-${chainId}`;
     const existingStats = await CollectionStat.findUnique({ id: statsId });
     
-    const currentTokenId = Number(event.args.tokenId);
-    
-    // Determine if collection is 0-indexed or 1-indexed
-    // Most NFT collections start at 1, but some start at 0
-    // For 0-indexed: totalSupply = highest tokenId + 1
-    // For 1-indexed: totalSupply = highest tokenId
-    const isZeroIndexed = collectionName === "Honeycomb"; // Add others if known
-    const adjustedSupply = isZeroIndexed ? currentTokenId + 1 : currentTokenId;
-    
     if (existingStats) {
-      const currentMaxSupply = existingStats.totalSupply || 0;
-      const shouldUpdateSupply = isMint && adjustedSupply > currentMaxSupply;
-      const toHolderExists = await Holder.findUnique({ id: `${to}-${collectionName}-${chainId}` });
+      // Calculate changes based on transfer type
+      let supplyChange = 0;
+      let mintedChange = 0;
+      let burnedChange = 0;
+      
+      if (isMint) {
+        supplyChange = 1;
+        mintedChange = 1;
+      } else if (isBurn) {
+        supplyChange = -1;
+        burnedChange = 1;
+      }
+      
+      // Check if we need to update unique holders count
+      const toHolderExists = !isBurn && !isToProxy && 
+        await Holder.findUnique({ id: `${to}-${collectionName}-${chainId}` });
+      const fromHolderBalance = !isMint && !isFromProxy && 
+        await Holder.findUnique({ id: `${from}-${collectionName}-${chainId}` });
+      
+      let holderChange = 0;
+      if (!isBurn && !toHolderExists) holderChange++; // New holder
+      if (fromHolderBalance && fromHolderBalance.balance === 1) holderChange--; // Holder losing last token
       
       await CollectionStat.update({
         id: statsId,
         data: {
-          totalSupply: shouldUpdateSupply ? adjustedSupply : currentMaxSupply,
+          totalSupply: Math.max(0, existingStats.totalSupply + supplyChange),
+          totalMinted: existingStats.totalMinted + mintedChange,
+          totalBurned: existingStats.totalBurned + burnedChange,
+          uniqueHolders: Math.max(0, existingStats.uniqueHolders + holderChange),
           lastMintTime: isMint ? timestamp : existingStats.lastMintTime,
-          uniqueHolders: (!toHolderExists && !isBurn && !isToProxy) 
-            ? existingStats.uniqueHolders + 1 
-            : existingStats.uniqueHolders,
         }
       });
     } else if (isMint) {
@@ -281,7 +324,9 @@ async function handleTransfer(
         id: statsId,
         data: {
           collection: collectionName,
-          totalSupply: adjustedSupply,
+          totalSupply: 1,
+          totalMinted: 1,
+          totalBurned: 0,
           uniqueHolders: 1,
           lastMintTime: timestamp,
           chainId: chainId,

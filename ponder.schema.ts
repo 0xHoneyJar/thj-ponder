@@ -46,10 +46,24 @@ export default createSchema((p) => ({
     firstMintTime: p.bigint().optional(),
   }),
   
+  // Track individual tokens to get accurate counts
+  Token: p.createTable({
+    id: p.string(), // collection-chainId-tokenId (e.g., "HoneyJar1-1-123")
+    collection: p.string(),
+    chainId: p.int(),
+    tokenId: p.bigint(),
+    owner: p.string(), // Current owner address
+    isBurned: p.boolean(), // Track if token is burned
+    mintedAt: p.bigint(),
+    lastTransferTime: p.bigint(),
+  }),
+  
   CollectionStat: p.createTable({
     id: p.string(), // collection name + chainId (e.g., "HoneyJar1-1")
     collection: p.string(),
-    totalSupply: p.int(), // Total number of NFTs minted
+    totalSupply: p.int(), // Total number of NFTs currently in circulation (minted - burned)
+    totalMinted: p.int(), // Total number of NFTs ever minted
+    totalBurned: p.int(), // Total number of NFTs burned
     uniqueHolders: p.int(), // Number of unique holders
     lastMintTime: p.bigint().optional(),
     chainId: p.int(),
